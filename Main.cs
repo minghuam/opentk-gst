@@ -46,7 +46,7 @@ namespace testGstSharp
 
          void GameWindow1_Closed(object sender, EventArgs e)
          {
-             Exit();
+             this.Exit();
          }
 
          public override void Exit()

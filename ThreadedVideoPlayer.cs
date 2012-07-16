@@ -92,7 +92,9 @@ namespace testGstSharp
 				
 				//Create playbin2 and appsink
                 playBin = new PlayBin2();
+
                 appSink = ElementFactory.Make("appsink", "sink") as AppSink;
+                //appSink.Caps = new Caps("video/x-raw-yuv", new object[]{});
                 appSink.Caps = new Caps("video/x-raw-rgb", new object[] { "bpp", 24 });
                 appSink.Drop = true;
                 appSink.MaxBuffers = 1;
@@ -101,6 +103,7 @@ namespace testGstSharp
 				//Create playbin2 and appsink
 				playBin = new PlayBin2();
                 appSink = ElementFactory.Make("appsink", "sink") as AppSink;
+                //appSink.Caps = new Caps("video/x-raw-yuv", new object[]{});
                 appSink.Caps = new Caps("video/x-raw-rgb", new object[] { "bpp", 24 });
                 appSink.Drop = true;
                 appSink.MaxBuffers = 1;
@@ -154,7 +157,9 @@ namespace testGstSharp
 					    if(buf != null){
 
                             Console.WriteLine(buf.Caps.ToString());
-
+						
+							//string format = buf.Caps[0].GetValue("format").Val.ToString();
+							//Console.WriteLine("format: " + format);
                             int.TryParse(buf.Caps[0].GetValue("width").Val.ToString(), out w);
                             int.TryParse(buf.Caps[0].GetValue("height").Val.ToString(), out h);
                             if (w * h != 0)
@@ -168,13 +173,14 @@ namespace testGstSharp
                                     Marshal.Copy(buf.Data, buffer, 0, width * height * 3);
                                     isFrameNew = true;
 									//Dispose handle to avoid memory leak
-                                    gst_mini_object_unref(buf.Handle);
+                                    //gst_mini_object_unref(buf.Handle);
                                     buf.Dispose();
                                 }
                               
                                 Console.WriteLine("PLAYING");
                                 playerState = VideoPlayerState.PLAYING;
 								
+							
 								continue;
                             }
 						}
@@ -188,8 +194,8 @@ namespace testGstSharp
 								//Update buffer
 							    Marshal.Copy(buf2.Data, buffer, 0, width * height * 3);
 							    isFrameNew = true;
-                                gst_mini_object_unref(buf2.Handle);
-                                buf2.Dispose();
+                                //gst_mini_object_unref(buf2.Handle);
+                                //buf2.Dispose();
 						    }
 						
 						    buf2.Dispose();
@@ -267,7 +273,8 @@ namespace testGstSharp
 		}
 		
 		public void Draw(int x, int y, int w, int h){
-
+			
+			
             if (textureID == 0)
             {
                 //Clear buffer when nothing loaded
