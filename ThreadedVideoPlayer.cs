@@ -23,12 +23,12 @@ namespace testGstSharp
 	public class ThreadedVideoPlayer
 	{
 
-        public enum VideoPlayerState{
-            STOPPED,
-            LOADING,
-            PLAYING,
-            PAUSED,
-        }   
+		public enum VideoPlayerState{
+		    STOPPED,
+		    LOADING,
+		    PLAYING,
+		    PAUSED,
+		}   
 
 		static bool _gstInited = false;
 		// Gst depends on GLib loop for event handling
@@ -38,76 +38,81 @@ namespace testGstSharp
 			}
 		}
 		
+		#region field
 		//Using Playbin2 and AppSink
 		PlayBin2 playBin = null;
 		AppSink appSink = null;
 		int width = 0;
 		int height = 0;
 		byte[] buffer = null;
-        internal int textureID = 0;
-        int[] pboIDs = new int[2];
-        int pboIndex = 0;
-        bool texturesOK = false;
+		internal int textureID = 0;
+		int[] pboIDs = new int[2];
+		int pboIndex = 0;
+		bool texturesOK = false;
 		
 		bool isFrameNew = false;
 		object lockFrameBuf = new object();
-
+		
 		bool isrunning = true;
 		Thread gstThread;
-
-
+		
         VideoPlayerState playerState = VideoPlayerState.STOPPED;
         internal VideoPlayerState PlayerState { get { return playerState; } private set { playerState = value; } }
-
+		#endregion
 
         //Linux GstreamerSharp bug, see https://bugzilla.gnome.org/show_bug.cgi?id=636804
 		
         [DllImport("libgstreamer-0.10.so", CallingConvention = CallingConvention.Cdecl)]
         static extern void gst_mini_object_unref(IntPtr raw);
 
-		
 		public ThreadedVideoPlayer ()
 		{
 			//do nothing
 		}
 		
+		/// <summary>
+		/// Loads the video. Setup playbin2 and start polling thread
+		/// </summary>
+		/// <param name='uri'>
+		/// video URI.
+		/// </param>
 		public void LoadVideo(string uri){
 
-            if (gstThread != null)
-            {
-                isrunning = false;
-                gstThread.Join();
-                gstThread = new Thread(new ThreadStart(KeepPolling));
-            }
+			if (gstThread != null)
+			{
+				isrunning = false;
+				gstThread.Join();
+				gstThread = new Thread(new ThreadStart(KeepPolling));
+			}
 
 			if(playBin != null){
-                playerState = VideoPlayerState.STOPPED;
-                Console.WriteLine("STOPPED");
-
+				playerState = VideoPlayerState.STOPPED;
+				Console.WriteLine("STOPPED");
+				
 				//Dispose playbin2 and appsink
-                playBin.SetState(State.Null);
-                playBin.Dispose();
-                appSink.SetState(State.Null);
-                appSink.Dispose();
+				playBin.SetState(State.Null);
+				playBin.Dispose();
+				appSink.SetState(State.Null);
+				appSink.Dispose();
 				
 				//Create playbin2 and appsink
-                playBin = new PlayBin2();
-
-                appSink = ElementFactory.Make("appsink", "sink") as AppSink;
-                //appSink.Caps = new Caps("video/x-raw-yuv", new object[]{});
-                appSink.Caps = new Caps("video/x-raw-rgb", new object[] { "bpp", 24 });
-                appSink.Drop = true;
-                appSink.MaxBuffers = 1;
-                playBin.VideoSink = appSink;
+				playBin = new PlayBin2();
+				
+				appSink = ElementFactory.Make("appsink", "sink") as AppSink;
+				//appSink.Caps = new Caps("video/x-raw-yuv", new object[]{});
+				appSink.Caps = new Caps("video/x-raw-rgb", new object[] { "bpp", 24 });
+				appSink.Drop = true;
+				appSink.MaxBuffers = 1;
+				playBin.VideoSink = appSink;
 			}else{
 				//Create playbin2 and appsink
 				playBin = new PlayBin2();
-                appSink = ElementFactory.Make("appsink", "sink") as AppSink;
-                //appSink.Caps = new Caps("video/x-raw-yuv", new object[]{});
-                appSink.Caps = new Caps("video/x-raw-rgb", new object[] { "bpp", 24 });
-                appSink.Drop = true;
-                appSink.MaxBuffers = 1;
-                playBin.VideoSink = appSink;
+				appSink = ElementFactory.Make("appsink", "sink") as AppSink;
+				//appSink.Caps = new Caps("video/x-raw-yuv", new object[]{});
+				appSink.Caps = new Caps("video/x-raw-rgb", new object[] { "bpp", 24 });
+				appSink.Drop = true;
+				appSink.MaxBuffers = 1;
+				playBin.VideoSink = appSink;
 			}
 
 			//init variables
@@ -131,33 +136,30 @@ namespace testGstSharp
             {
                 gstThread = new Thread(new ThreadStart(KeepPolling));
             }
-
-            isrunning = true;
+			
 			//Start polling thread...future thought, using async queue?
+            isrunning = true;
             gstThread.Start();
 
             return;
 		}
 		
+		/// <summary>
+		/// Polling thread. Pull buffer data from GST thread.
+		/// </summary>
 		void KeepPolling(){
-			
 			while(isrunning){
-
-                switch (playerState)
+				switch (playerState)
                 {
-                    case VideoPlayerState.STOPPED:
-                        Thread.Sleep(10);
+					case VideoPlayerState.STOPPED:
                         break;
                     case VideoPlayerState.LOADING:
                         //get video width/height
                         int w = 0, h = 0;
-					
 						//Query video information
                         Gst.Buffer buf = appSink.PullBuffer();
 					    if(buf != null){
-
-                            Console.WriteLine(buf.Caps.ToString());
-						
+							Console.WriteLine(buf.Caps.ToString());
 							//string format = buf.Caps[0].GetValue("format").Val.ToString();
 							//Console.WriteLine("format: " + format);
                             int.TryParse(buf.Caps[0].GetValue("width").Val.ToString(), out w);
@@ -176,16 +178,11 @@ namespace testGstSharp
                                     //gst_mini_object_unref(buf.Handle);
                                     buf.Dispose();
                                 }
-                              
                                 Console.WriteLine("PLAYING");
                                 playerState = VideoPlayerState.PLAYING;
-								
-							
 								continue;
                             }
 						}
-						//Nothing
-                        Thread.Sleep(10);
                         break;
                     case VideoPlayerState.PLAYING:
                         Gst.Buffer buf2 = appSink.PullBuffer();
@@ -212,13 +209,12 @@ namespace testGstSharp
                         break;
                     case VideoPlayerState.PAUSED:
 						//Do nothing
-                        Thread.Sleep(10);
                         break;
                     default:
 						//Do nothing
-                        Thread.Sleep(10);
                         break;
                 }
+				Thread.Sleep(10);
 			}
 			
 			//Clean up
@@ -231,17 +227,23 @@ namespace testGstSharp
             appSink = null;
 		}
 	
+		/// <summary>
+		/// Stop this instance.
+		/// </summary>
 		public void Stop(){
 			isrunning = false;
             if (gstThread != null)
                 gstThread.Join();
 		}
 		
+		/// <summary>
+		/// Gameloop update. Update PBO buffer texture data.
+		/// </summary>
 		public void Update(){
-
+			
             switch (playerState)
             {
-                case VideoPlayerState.LOADING:
+				case VideoPlayerState.LOADING:
                     break;
                 case VideoPlayerState.PAUSED:
                     break;
@@ -251,11 +253,6 @@ namespace testGstSharp
                         SetupTexture(width, height);
                         SetupPBOs(width, height);
                         texturesOK = true;
-                        lock (lockFrameBuf)
-                        {
-							//New frame arrived, update PBO
-                            UpdatePBO(buffer, width, height);
-                        }
                     }
                     if (isFrameNew)
                     {
@@ -272,17 +269,55 @@ namespace testGstSharp
             }
 		}
 		
-		public void Draw(int x, int y, int w, int h){
+		/// <summary>
+		/// Draw the specified x, y, w and h.
+		/// </summary>
+		/// <param name='x'>
+		/// Pos X.
+		/// </param>
+		/// <param name='y'>
+		/// Pos Y.
+		/// </param>
+		/// <param name='w'>
+		/// Draw Width.
+		/// </param>
+		/// <param name='h'>
+		/// Draw Height.
+		/// </param>
+		public void Draw(float x, float y, float w, float h){
 			
+			if(!texturesOK) return;
 			
-            if (textureID == 0)
-            {
-                //Clear buffer when nothing loaded
-                buffer = new byte[w * h * 3];
-                SetupTexture(w, h);
-            }
+			float[] points = {
+							x, y,
+							x+w, y,
+							x+w, y+h,
+							x, y+h
+			};
+			
+			float[] texcoords = {
+							0.0f, 1.0f,
+							1.0f, 1.0f,
+							1.0f, 0.0f,
+							0.0f, 0.0f
+			};
 			
 			//Draw quad texture
+			GL.Enable(EnableCap.Texture2D);
+	        GL.BindTexture(TextureTarget.Texture2D, textureID);
+			
+			GL.EnableClientState(ArrayCap.VertexArray);
+			GL.VertexPointer(2, VertexPointerType.Float, 0, points);
+			GL.EnableClientState(ArrayCap.TextureCoordArray);
+			GL.TexCoordPointer(2, TexCoordPointerType.Float, 0, texcoords);
+			GL.DrawArrays(BeginMode.Polygon, 0, 4);
+			
+			GL.DisableClientState(ArrayCap.VertexArray);
+			
+	        GL.Disable(EnableCap.Texture2D);
+			
+			//Draw quad texture
+			/*
 			GL.Enable(EnableCap.Texture2D);
 	        GL.BindTexture(TextureTarget.Texture2D, textureID);
 	        GL.Begin(BeginMode.Quads);
@@ -299,10 +334,18 @@ namespace testGstSharp
 	
 	        GL.Disable(EnableCap.Texture2D);
 	        GL.End();
-			
+			*/
 		}
 		
-		// Create PBOs
+		/// <summary>
+		/// Setups the Pixels Buffer Objects.
+		/// </summary>
+		/// <param name='w'>
+		/// Buffer Width.
+		/// </param>
+		/// <param name='h'>
+		/// Buffer Height.
+		/// </param>
         void SetupPBOs(int w, int h)
         {
             if (pboIDs[0] == 0) GL.GenBuffers(1, out pboIDs[0]);
@@ -314,7 +357,15 @@ namespace testGstSharp
             GL.BufferData(BufferTarget.PixelUnpackBuffer, new IntPtr(w * h * 3), IntPtr.Zero, BufferUsageHint.StreamDraw);
         }
 		
-		// Setup texture
+		/// <summary>
+		/// Setups the texture.
+		/// </summary>
+		/// <param name='w'>
+		/// Texture Width.
+		/// </param>
+		/// <param name='h'>
+		/// Texture Height.
+		/// </param>
 		void SetupTexture(int w, int h){
 			
 			GL.Enable(EnableCap.Texture2D);
@@ -331,7 +382,19 @@ namespace testGstSharp
 		    GL.Disable(EnableCap.Texture2D);
 		}
 		
-		// Ref: http://www.songho.ca/opengl/gl_pbo.html
+		/// <summary>
+		/// Updates the PB.
+		/// Ref: http://www.songho.ca/opengl/gl_pbo.html
+		/// </summary>
+		/// <param name='buf'>
+		/// Data Buffer.
+		/// </param>
+		/// <param name='w'>
+		/// Texture width.
+		/// </param>
+		/// <param name='h'>
+		/// Texture height.
+		/// </param>
         void UpdatePBO(byte[] buf, int w, int h)
         {
             // increment current index first then get the next index
