@@ -8,7 +8,8 @@ http://cgit.freedesktop.org/gstreamer/gstreamer-sharp/
 
 If you encounter this bug:
 http://lists.freedesktop.org/archives/gstreamer-bugs/2010-August/068387.html
-
-Hotfix:
 Download latest source and compile.
 Replace /usr/lib/cli/gstreamer-sharp-0.9/gstreamer-sharp.dll.
+
+(#edit): Add ThreadedGLSLVideoPlayer.cs.
+Improve performace significantly with GPU color conversion.
