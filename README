@@ -1,6 +1,5 @@
-OpenTK does not support video playback which is a common request for multimedia application.
+OpenTK does not support video playback which is a common request for multimedia applications.
 This is a initial test of Gstreamer-sharp working with OpenTK.
-It works well in a recent project.
 
 Reference:
 http://www.opentk.com/
